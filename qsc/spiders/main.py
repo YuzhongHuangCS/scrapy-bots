@@ -51,4 +51,5 @@ class MainSpider(CrawlSpider):
 
 	def saveImage(self, response):
 		id = self.fs.put(response.body)
-		self.fsCollection.update({"_id": id}, {'$set': {"url": response.url}}, True)
+		mime = response.headers['Content-Type']
+		self.fsCollection.update({"_id": id}, {'$set': {"url": response.url, "Content-Type": mime}}, True)
