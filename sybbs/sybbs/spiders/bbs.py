@@ -68,6 +68,7 @@ class MainSpider(CrawlSpider):
 
 
 	def parseThread(self, response):
+		url = response.url.replace('http://bbs', 'http://www')
 		reply = []
 		for floor in response.css('div.tpc_content').extract():
 			reply.append(pyq(floor).text())
