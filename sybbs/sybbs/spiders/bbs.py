@@ -19,7 +19,7 @@ class MainSpider(CrawlSpider):
 	]
 
 	rules = (
-		Rule(LinkExtractor(allow=('thread-htm-fid', 'thread\.php\?fid')), callback='parseField'),
+		Rule(LinkExtractor(allow=('thread-htm-fid', 'thread\.php\?fid')), callback='parseField', follow=True),
 		Rule(LinkExtractor(allow=('read-htm-tid', 'read\.php\?tid')), callback='parseThread'),
 	)
 
