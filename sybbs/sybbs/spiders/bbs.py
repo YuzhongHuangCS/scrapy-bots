@@ -57,7 +57,7 @@ class MainSpider(CrawlSpider):
 			except Exception, e:
 				pass
 
-			self.collection.update({"url": info['url']}, info, True)
+			self.collection.update({"url": info['url']}, {"$set": info}, True)
 
 			'''
 			the scheduler of yield here is different from that in tornado or twisted,
@@ -72,4 +72,4 @@ class MainSpider(CrawlSpider):
 		for floor in response.css('div.tpc_content').extract():
 			reply.append(pyq(floor).text())
 
-		self.collection.update({"url": response.url}, {'$set': {"reply": reply}})
+		self.collection.update({"url": response.url}, {'$set': {"reply": reply}}, True)
