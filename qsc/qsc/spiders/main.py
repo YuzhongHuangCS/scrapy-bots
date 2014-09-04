@@ -42,12 +42,13 @@ class MainSpider(CrawlSpider):
 
 		self.collection.update({"url": post['url']}, post, True)
 
-		# avoid use yield, in order to make attachment download in parallel
-		imgs = []
+		'''
+		the scheduler of yield here is different from that in tornado or twisted,
+		it will call `next()` immediately, rather than the IO has completed
+		so just use yield, it is still in parallel 
+		'''
 		for url in post['img']:
-			imgs.append(Request(url, callback=self.saveImage))
-
-		return imgs
+			yield Request(url, callback=self.saveImage)
 
 	def saveImage(self, response):
 		id = self.fs.put(response.body)

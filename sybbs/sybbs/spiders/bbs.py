@@ -19,8 +19,8 @@ class MainSpider(CrawlSpider):
 	]
 
 	rules = (
-		Rule(LinkExtractor(allow=('thread-htm-fid')), callback='parseField'),
-		Rule(LinkExtractor(allow=('read-htm-tid')), callback='parseThread'),
+		Rule(LinkExtractor(allow=('thread-htm-fid', 'thread\.php\?fid')), callback='parseField'),
+		Rule(LinkExtractor(allow=('read-htm-tid', 'read\.php\?tid')), callback='parseThread'),
 	)
 
 	def __init__(self):
@@ -30,15 +30,15 @@ class MainSpider(CrawlSpider):
 
 	def parseField(self, response):
 
-		threads = []
+		'''
+		Exceptions:
+		* stick top thread don't have field
+		* global stick top even don't have timestamp
+		* nested tags, use pyquery
+		* based whether on '-' in time to test if it is a recent thread
+		'''
+
 		for thread in response.css('tr.tr3'):
-			'''
-			Exceptions:
-			* stick top thread don't have field
-			* global stick top even don't have timestamp
-			* nested tags, use pyquery
-			* based whether on '-' in time to test if it is a recent thread
-			'''
 			try:
 				if '-' in thread.css('td.author > p > a::text').extract()[0]:
 					continue
@@ -58,9 +58,14 @@ class MainSpider(CrawlSpider):
 				pass
 
 			self.collection.update({"url": info['url']}, info, True)
-			threads.append(Request(info['url'], callback=self.parseThread))
 
-		return threads
+			'''
+			the scheduler of yield here is different from that in tornado or twisted,
+			it will call `next()` immediately, rather than the IO has completed
+			so just use yield, it is still in parallel 
+			'''
+			yield Request(info['url'], callback=self.parseThread)
+
 
 	def parseThread(self, response):
 		reply = []
