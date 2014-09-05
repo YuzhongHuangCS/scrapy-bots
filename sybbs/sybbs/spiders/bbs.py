@@ -45,15 +45,15 @@ class MainSpider(CrawlSpider):
 				nextPageUrl = self.start_urls[0] + response.css('div.pages > b + a::attr(href)').extract()[0]
 				yield Request(nextPageUrl, callback=self.parseField)
 		except Exception, e:
-			pass
+			self.log('Exception occured: %s, %s' % (response.url, e))
 
 		'''
 		Filter and fetch thread page
+		Based whether on '-' in time to test if it is a recent thread
+		For nested tags, use pyquery
 		Exceptions:
 		* stick top thread don't have field
 		* global stick top even don't have timestamp
-		* nested tags, use pyquery
-		* based whether on '-' in time to test if it is a recent thread
 		'''
 
 		for thread in response.css('tr.tr3'):
@@ -61,6 +61,9 @@ class MainSpider(CrawlSpider):
 				if '-' in thread.css('td.author > p > a::text').extract()[0]:
 					continue
 			except Exception, e:
+				# This exception is caused by global stick top didn't have time stamp
+				# So it will occured in every field, have to comment out
+				# self.log('Exception occured: %s, %s' % (response.url, e))
 				continue
 
 			author = thread.css('td.author > p > a')
@@ -73,6 +76,9 @@ class MainSpider(CrawlSpider):
 				info['title'] = pyq(thread.css('a.subject_t').extract()[0]).text()
 				info['field'] = thread.css('a.view::text').extract()[0].strip('[]')
 			except Exception, e:
+				# This exception is caused by stick top thread didn't have field
+				# It also occured very frequently, have to comment out
+				# self.log('Exception occured: %s, %s' % (response.url, e))
 				pass
 
 			self.collection.update({"url": info['url']}, {"$set": info}, True)
