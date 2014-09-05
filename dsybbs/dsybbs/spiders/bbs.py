@@ -7,10 +7,9 @@ from pymongo import MongoClient
 
 class MainSpider(CrawlSpider):
 	name = "bbs"
-	allowed_domains = ['dsybbs.com', 'shangyu.zj.cn']
+	allowed_domains = ['dsybbs.com']
 	start_urls = [
 		'http://www.dsybbs.com/',
-		'http://www.shangyu.zj.cn/',
 	]
 
 	'''
@@ -58,18 +57,14 @@ class MainSpider(CrawlSpider):
 				if '-' in thread.css('td.by:last-child > em > a > span::text').extract()[0]:
 					continue
 			except Exception, e:
-				# This exception is caused by global stick top didn't have timestamp
-				# So it will occured in every field, have to comment out
+				# This exception is caused by non-recent threads didn't have <span> within <a>
+				# Every un-matched thread will raise this exception, have to comment out
 				# self.log('Exception occured: %s, %s' % (response.url, e))
 				continue
 
 			info ={}
 			try:
 				info['url'] = thread.css('th > a::attr(href)').extract()[0]
-			except Exception, e:
-				continue
-
-			try:
 				info['timestamp'] = thread.css('td.by:last-child > em > a > span::attr(title)').extract()[0]
 				info['title'] = thread.css('th > a::text').extract()[0]
 				info['field'] = thread.css('th > em > a::text').extract()[0]
@@ -91,7 +86,7 @@ class MainSpider(CrawlSpider):
 
 	def parseThread(self, response):
 		reply = []
-		for floor in response.css('div#postlist > div > table > tr > td.plc > div.pct').extract():
+		for floor in response.css('div#postlist > div > table > tr:first-child > td.plc > div.pct').extract():
 			reply.append(pyq(floor).text())
 
 		self.collection.update({"url": response.url}, {'$set': {"reply": reply}}, True)
