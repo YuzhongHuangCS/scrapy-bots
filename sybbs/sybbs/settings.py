@@ -14,4 +14,4 @@ SPIDER_MODULES = ['sybbs.spiders']
 NEWSPIDER_MODULE = 'sybbs.spiders'
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
-#USER_AGENT = 'sybbs (+http://www.yourdomain.com)'
+USER_AGENT = 'QSCTech (+http://tech.myqsc.com/)'

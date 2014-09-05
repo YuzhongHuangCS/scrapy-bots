@@ -20,4 +20,4 @@ ITEM_PIPELINES = {
 }
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
-USER_AGENT = 'deepin (+http://planet.linuxdeepin.com/)'
+USER_AGENT = 'QSCTech (+http://tech.myqsc.com/)'

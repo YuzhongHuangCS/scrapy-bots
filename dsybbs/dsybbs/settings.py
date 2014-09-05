@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Scrapy settings for acm project
+# Scrapy settings for dsybbs project
 #
 # For simplicity, this file contains only the most important settings by
 # default. All the other settings are documented here:
@@ -8,15 +8,10 @@
 #     http://doc.scrapy.org/en/latest/topics/settings.html
 #
 
-BOT_NAME = 'zoj'
+BOT_NAME = 'dsybbs'
 
-SPIDER_MODULES = ['zoj.spiders']
-NEWSPIDER_MODULE = 'zoj.spiders'
-DEFAULT_ITEM_CLASS = 'zoj.items.Problem'
-
-ITEM_PIPELINES = {
-	'zoj.pipelines.StoreToMongoDB': 1
-}
+SPIDER_MODULES = ['dsybbs.spiders']
+NEWSPIDER_MODULE = 'dsybbs.spiders'
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 USER_AGENT = 'QSCTech (+http://tech.myqsc.com/)'

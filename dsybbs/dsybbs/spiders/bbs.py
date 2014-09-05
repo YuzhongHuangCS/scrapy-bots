@@ -7,15 +7,10 @@ from pymongo import MongoClient
 
 class MainSpider(CrawlSpider):
 	name = "bbs"
-	allowed_domains = ['0575bbs.com']
+	allowed_domains = ['dsybbs.com', 'shangyu.zj.cn']
 	start_urls = [
-		'http://www.0575bbs.com/',
-		'http://bbs.0575bbs.com/',
-		'http://food.0575bbs.com/',
-		'http://travel.0575bbs.com/',
-		'http://marry.0575bbs.com/',
-		'http://baby.0575bbs.com/',
-		'http://prepaid.0575bbs.com/',
+		'http://www.dsybbs.com/',
+		'http://www.shangyu.zj.cn/',
 	]
 
 	'''
@@ -24,12 +19,12 @@ class MainSpider(CrawlSpider):
 	Manually check and schedule later.
 	'''
 	rules = (
-		Rule(LinkExtractor(allow=('thread-htm-fid', 'thread\.php\?fid')), callback='parseField'),
+		Rule(LinkExtractor(allow=('/forum.*\.html')), callback='parseField'),
 	)
 
 	def __init__(self):
 		super(MainSpider, self).__init__()
-		self.db = MongoClient().sybbs
+		self.db = MongoClient().dsybbs
 		self.collection = self.db.thread
 
 	def parseField(self, response):
@@ -40,12 +35,14 @@ class MainSpider(CrawlSpider):
 		* Login required pages.
 		'''
 		try:
-			lastThread = response.css('tbody#threadlist > tr:last-child')
-			if '-' not in lastThread.css('td.author > p > a::text').extract()[0]:
-				nextPageUrl = self.start_urls[0] + response.css('div.pages > b + a::attr(href)').extract()[0]
+			if '-' not in response.css('div#threadlist > div.bm_c table tbody:last-child td.by:last-child > em > a > span::text').extract()[0]:
+				nextPageUrl = self.start_urls[0] + response.css('span#fd_page_bottom > div.pg > strong + a::attr(href)').extract()[0].replace(self.start_urls[0], '')
 				yield Request(nextPageUrl, callback=self.parseField)
 		except Exception, e:
-			self.log('Exception occured: %s, %s' % (response.url, e))
+			# This exception is caused by non-recent threads didn't have <span> within <a>
+			# Every un-matched thread will raise this exception, have to comment out
+			# self.log('Exception occured: %s, %s' % (response.url, e))
+			pass
 
 		'''
 		Filter and fetch thread page
@@ -56,22 +53,26 @@ class MainSpider(CrawlSpider):
 		* global stick top even don't have timestamp
 		'''
 
-		for thread in response.css('tr.tr3'):
+		for thread in response.css('div#threadlist > div.bm_c table tr'):
 			try:
-				if '-' in thread.css('td.author > p > a::text').extract()[0]:
+				if '-' in thread.css('td.by:last-child > em > a > span::text').extract()[0]:
 					continue
 			except Exception, e:
-				# This exception is caused by global stick top didn't have time stamp
+				# This exception is caused by global stick top didn't have timestamp
 				# So it will occured in every field, have to comment out
 				# self.log('Exception occured: %s, %s' % (response.url, e))
 				continue
 
 			info ={}
 			try:
-				info['url'] = self.start_urls[0] + thread.css('a.subject_t::attr(href)').extract()[0]
-				info['timestamp'] = thread.css('td.author > p > a::attr(title)').extract()[0]
-				info['title'] = pyq(thread.css('a.subject_t').extract()[0]).text()
-				info['field'] = thread.css('a.view::text').extract()[0].strip('[]')
+				info['url'] = thread.css('th > a::attr(href)').extract()[0]
+			except Exception, e:
+				continue
+
+			try:
+				info['timestamp'] = thread.css('td.by:last-child > em > a > span::attr(title)').extract()[0]
+				info['title'] = thread.css('th > a::text').extract()[0]
+				info['field'] = thread.css('th > em > a::text').extract()[0]
 			except Exception, e:
 				# This exception is caused by stick top thread didn't have field
 				# It also occured very frequently, have to comment out
@@ -89,9 +90,8 @@ class MainSpider(CrawlSpider):
 
 
 	def parseThread(self, response):
-		url = response.url.replace('http://bbs', 'http://www')
 		reply = []
-		for floor in response.css('div.tpc_content').extract():
+		for floor in response.css('div#postlist > div > table > tr > td.plc > div.pct').extract():
 			reply.append(pyq(floor).text())
 
 		self.collection.update({"url": response.url}, {'$set': {"reply": reply}}, True)
