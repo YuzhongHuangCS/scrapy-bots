@@ -1,5 +1,5 @@
 # The user side implementation hasn't be decided.
-# Two plans:
+## Two plans:
 
 * Web
   1. Could make use of notification and websockets.

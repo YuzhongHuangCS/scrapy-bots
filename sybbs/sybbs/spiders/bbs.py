@@ -18,9 +18,13 @@ class MainSpider(CrawlSpider):
 		'http://prepaid.0575bbs.com/',
 	]
 
+	'''
+	Forbid directly fetch thread pages, or follow field pages
+	Because haven't check if they are recent post, and by always, not.
+	Manually check and schedule later.
+	'''
 	rules = (
-		Rule(LinkExtractor(allow=('thread-htm-fid', 'thread\.php\?fid')), callback='parseField', follow=True),
-		Rule(LinkExtractor(allow=('read-htm-tid', 'read\.php\?tid')), callback='parseThread'),
+		Rule(LinkExtractor(allow=('thread-htm-fid', 'thread\.php\?fid')), callback='parseField'),
 	)
 
 	def __init__(self):
@@ -31,6 +35,20 @@ class MainSpider(CrawlSpider):
 	def parseField(self, response):
 
 		'''
+		Check if need to fetch next field page
+		Exceptions:
+		* Login required pages.
+		'''
+		try:
+			lastThread = response.css('tbody#threadlist > tr:last-child')
+			if '-' not in lastThread.css('td.author > p > a::text').extract()[0]:
+				nextPageUrl = self.start_urls[0] + response.css('div.pages > b + a::attr(href)').extract()[0]
+				yield Request(nextPageUrl, callback=self.parseField)
+		except Exception, e:
+			pass
+
+		'''
+		Filter and fetch thread page
 		Exceptions:
 		* stick top thread don't have field
 		* global stick top even don't have timestamp
