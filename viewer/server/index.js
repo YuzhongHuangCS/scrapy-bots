@@ -8,6 +8,10 @@
 
   requestHandlers = require('./requestHandlers');
 
+  process.on('uncaughtException', function(error) {
+    return console.dir(error);
+  });
+
   handle = {};
 
   handle['/'] = requestHandlers.index;

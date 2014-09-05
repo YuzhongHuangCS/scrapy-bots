@@ -1,5 +1,4 @@
 route = (handle, path, request, response) ->
-	console.log "About to route a request for #{path}"
 	if typeof handle[path] == 'function'
 		handle[path](request, response)
 	else
@@ -7,4 +6,4 @@ route = (handle, path, request, response) ->
 		response.write("404 Not found")
 		response.end()
 
-exports.route = route;
+exports.route = route

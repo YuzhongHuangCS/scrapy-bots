@@ -8,9 +8,11 @@
 
   MongoClient.connect("mongodb://localhost:27017/sybbs", function(error, db) {
     if (error) {
-      return console.dir(error);
+      console.dir(error);
+      return process.exit(1);
+    } else {
+      return collection = db.collection('thread');
     }
-    return collection = db.collection('thread');
   });
 
   index = function(request, response) {
@@ -24,7 +26,7 @@
   query = function(request, response) {
     var execQuery, postData;
     if (request.method !== 'POST') {
-      response.writeHead(200, {
+      response.writeHead(403, {
         'Content-Type': 'text/html;charset=UTF-8'
       });
       response.write('POST!');
@@ -36,20 +38,20 @@
         return postData += chunk;
       });
       request.addListener('end', function() {
-        if (postData != null) {
-          return execQuery(JSON.parse(postData), response);
-        } else {
-          response.writeHead(200, {
+        var exception;
+        try {
+          return execQuery(JSON.parse(postData).join('|'), response);
+        } catch (_error) {
+          exception = _error;
+          response.writeHead(403, {
             'Content-Type': 'text/html;charset=UTF-8'
           });
-          response.write('Null post data');
+          response.write('invalid post data');
           return response.end();
         }
       });
     }
-    return execQuery = function(postData, response) {
-      var regexString;
-      regexString = postData.join('|');
+    return execQuery = function(regexString, response) {
       return collection.find({
         $or: [
           {

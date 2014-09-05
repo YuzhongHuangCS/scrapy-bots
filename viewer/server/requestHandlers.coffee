@@ -2,8 +2,11 @@ MongoClient = require('mongodb').MongoClient
 
 collection = null
 MongoClient.connect "mongodb://localhost:27017/sybbs", (error, db) ->
-	return console.dir(error) if error
-	collection = db.collection('thread');
+	if error
+		console.dir(error)
+		process.exit(1)
+	else
+		collection = db.collection('thread');
 
 index = (request, response) ->
 	response.writeHead(200, {'Content-Type': 'text/html;charset=UTF-8'})
@@ -12,7 +15,7 @@ index = (request, response) ->
 
 query = (request, response) ->
 	if request.method != 'POST'
-		response.writeHead(200, {'Content-Type': 'text/html;charset=UTF-8'})
+		response.writeHead(403, {'Content-Type': 'text/html;charset=UTF-8'})
 		response.write('POST!')
 		response.end()
 	else
@@ -22,16 +25,14 @@ query = (request, response) ->
 			postData += chunk;
 
 		request.addListener 'end', ->
-			if postData?
-				execQuery(JSON.parse(postData), response)
-			else
-				response.writeHead(200, {'Content-Type': 'text/html;charset=UTF-8'})
-				response.write('Null post data')
+			try
+				execQuery(JSON.parse(postData).join('|'), response)
+			catch exception
+				response.writeHead(403, {'Content-Type': 'text/html;charset=UTF-8'})
+				response.write('invalid post data')
 				response.end()
 
-	execQuery = (postData, response)->
-		regexString = postData.join('|')
-
+	execQuery = (regexString, response)->
 		collection.find({
 			$or: [
 				{title: {$regex: regexString}},

@@ -3,7 +3,6 @@
   var route;
 
   route = function(handle, path, request, response) {
-    console.log("About to route a request for " + path);
     if (typeof handle[path] === 'function') {
       return handle[path](request, response);
     } else {
