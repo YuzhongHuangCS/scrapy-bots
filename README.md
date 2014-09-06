@@ -4,5 +4,6 @@
 * IDI
 * ZOJ
 * Deepin
-* SYBBS
-* DSYBBS
+* sybbs
+* dsybbs
+* bbsRss
