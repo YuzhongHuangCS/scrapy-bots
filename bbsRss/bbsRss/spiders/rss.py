@@ -21,7 +21,6 @@ class RssSpider(XMLFeedSpider):
 			if value['hasTag'] == True:
 				hasTag.append(*value['allowed_domains'])
 
-	print hasTag
 	def __init__(self):
 		super(RssSpider, self).__init__()
 		self.db = MongoClient().bbsRss
@@ -30,10 +29,9 @@ class RssSpider(XMLFeedSpider):
 	def parse_node(self, response, node):
 		description = node.css('description::text').extract()[0]
 
-		for item in self.hasTag:
-			if item in response.url:
+		for host in self.hasTag:
+			if host in response.url:
 				description = pyq(description).text()
-				print 'Run!'
 				break
 
 		post = {
@@ -44,6 +42,10 @@ class RssSpider(XMLFeedSpider):
 			"description": description,
 			"category": node.css('category::text').extract()[0],
 			"author": node.css('author::text').extract()[0],
-			"pubDate": node.css('pubDate::text').extract()[0],
 		}
+		try:
+			post['pubDate'] = node.css('pubDate::text').extract()[0]
+		except Exception, e:
+			post['pubDate'] = node.css('pubdate::text').extract()[0]
+
 		self.collection.update({"url": post['link']}, {"$set": post}, True)
