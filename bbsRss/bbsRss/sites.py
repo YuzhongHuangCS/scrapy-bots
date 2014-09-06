@@ -30,6 +30,12 @@ class Sites(object):
 
 	cejbbs = {
 		"allowed_domains": ['cejbbs.com'],
-		"start_urls": ['http://www.cejbbs.com/forum.php?mod=rss&fid=%s' % i for i in range(0, 100)],
+		"start_urls": ['http://www.cejbbs.com/forum.php?mod=rss&fid=%s' % i for i in range(0, 250)],
 		"hasTag": False
+	}
+
+	lt0575 = {
+		"allowed_domains": ['0575lt.com'],
+		"start_urls": ['http://www.0575lt.com/rss.php?fid=%s' % i for i in range(0, 100)],
+		"hasTag": True
 	}
