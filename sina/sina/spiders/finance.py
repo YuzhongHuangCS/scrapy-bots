@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 from scrapy.http import Request
-from scrapy.http import HtmlResponse
 from scrapy.spider import Spider
 from pyquery import PyQuery as pyq
 from pymongo import MongoClient
@@ -19,6 +18,7 @@ class FinanceSpider(Spider):
 	def __init__(self, category=None, *args, **kwargs):
 		super(FinanceSpider, self).__init__(*args, **kwargs)
 		self.allowed_domains = ['sina.com.cn']
+		self.start_urls = []
 		self.db = MongoClient().sina
 		self.collection = self.db.finance
 

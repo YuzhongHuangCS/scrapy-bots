@@ -7,3 +7,4 @@
 * sybbs
 * dsybbs
 * bbsRss
+* sina
