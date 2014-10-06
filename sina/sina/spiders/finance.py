@@ -4,6 +4,7 @@ from scrapy.spider import Spider
 from pyquery import PyQuery as pyq
 from pymongo import MongoClient
 from datetime import date, timedelta
+import json
 
 class FinanceSpider(Spider):
 	name = 'finance'
@@ -13,7 +14,8 @@ class FinanceSpider(Spider):
 		[1999.05.26, 1999.07.25) -> need right justify
 		[1999.07.25, 2001.02.01) -> needn't 
 		[2001.02.01, 2007.01.20) -> need right justify
-
+		[2007.01.20, 2007.12.12) -> js, sort by time
+		[2007.12.12, 2014.10.05 -> js, by category
 	'''
 	def __init__(self, category=None, *args, **kwargs):
 		super(FinanceSpider, self).__init__(*args, **kwargs)
@@ -48,14 +50,28 @@ class FinanceSpider(Spider):
 			if today.year == 2007 and today.month == 1 and today.day == 20:
 				break
 
+		while True:
+			url = "http://news.sina.com.cn/old1000/news1000_%s%s%s/data0.js" % (today.year, str(today.month).rjust(2, '0'), str(today.day).rjust(2, '0'))
+			yield Request(url, callback=self.parseJson)
+			today += step
+			if today.year == 2007 and today.month == 12 and today.day == 12:
+				break
+
+		while True:
+			url = "http://rss.sina.com.cn/rollnews/finance/%s%s%s.js" % (today.year, str(today.month).rjust(2, '0'), str(today.day).rjust(2, '0'))
+			yield Request(url, callback=self.parse2010Json)
+			today += step
+			if today.year == 2008 and today.month == 12 and today.day == 12:
+				break
+
 	def parse2000List(self, response):
 		response = response.replace(body=response.body.decode('gb2312', 'ignore').encode('utf-8'), encoding='utf-8')
 		for row in response.css('li'):
 			if row.css('::text').extract()[0].encode('utf-8') == "[财经] ":
 				url = row.css('a::attr(href)').extract()[0]
-				yield Request(url, callback=self.parse2000Post, priority=10)
+				yield Request(url, callback=self.parsePost, priority=10)
 
-	def parse2000Post(self, response):
+	def parsePost(self, response):
 		def analysys(response):
 			try:
 				d = pyq(response.css('div#artibody').extract()[0])
@@ -64,6 +80,19 @@ class FinanceSpider(Spider):
 					"title": response.css('h1#artibodyTitle::text').extract()[0],
 					"body": d.text(),
 					"date": response.css('span#pub_date::text').extract()[0],
+				}
+				return data
+
+			except Exception, e:
+				print e
+
+			try:
+				d = pyq(response.css('body').extract()[0])
+				data = {
+					"url": response.url,
+					"title": d('div#artibodyTitle').text(),
+					"body": d('div#artibody').text(),
+					"date": d('div.from_info').text(),
 				}
 				return data
 
@@ -87,3 +116,32 @@ class FinanceSpider(Spider):
 
 		data = analysys(response.replace(body=response.body.decode('gb2312', 'ignore').encode('utf-8'), encoding='utf-8'))
 		self.collection.update({"url": data['url']}, {"$set": data}, True)
+
+	def parseJson(self, response):
+		url = bytearray(response.url)
+		i = url[-4] + 1
+		url[-4] = i
+		yield Request(str(url), callback=self.parseJson)
+
+		response = response.replace(body=response.body.decode('gb2312', 'ignore').encode('utf-8'), encoding='utf-8')
+		body = response.body
+		start = body.index('[[')
+		end = body.index(']]') + 2
+		data = json.loads(body[start:end].replace('\\', ''), strict=False)
+		for item in data:
+			yield Request(item[3], callback=self.parsePost, priority=10)
+
+	def parse2010Json(self, response):
+		def dig(body):
+			lIndex = body.index('link') + 6
+			try:
+				while True:
+					lIndex = body.index('link', lIndex) + 6
+					rIndex = body.index('"', lIndex)
+					yield body[lIndex:rIndex]
+			except ValueError, e:
+				return
+
+		response = response.replace(body=response.body.decode('gb2312', 'ignore').encode('utf-8'), encoding='utf-8')
+		for url in dig(response.body):
+			yield Request(url, callback=self.parsePost, priority=10)
