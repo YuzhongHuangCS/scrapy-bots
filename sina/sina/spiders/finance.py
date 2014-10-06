@@ -17,6 +17,7 @@ class FinanceSpider(Spider):
 		[2007.01.20, 2007.12.12) -> js, sort by time
 		[2007.12.12, 2014.10.05) -> js, by category
 	'''
+
 	def __init__(self, category=None, *args, **kwargs):
 		super(FinanceSpider, self).__init__(*args, **kwargs)
 		self.allowed_domains = ['sina.com.cn']
@@ -66,8 +67,8 @@ class FinanceSpider(Spider):
 	def parseList(self, response):
 		response = response.replace(body=response.body.decode('gb2312', 'ignore').encode('utf-8'), encoding='utf-8')
 		for row in response.css('li'):
-			if row.css('::text').extract()[0].encode('utf-8') == "[财经] ":
-				url = row.css('a::attr(href)').extract()[0]
+			if "财经" in row.css('::text').extract()[0].encode('utf-8'):
+				url = 'http://news.sina.com.cn' + row.css('a::attr(href)').extract()[0]
 				yield Request(url, callback=self.parsePost, priority=10)
 
 	def parseJson(self, response):
@@ -108,24 +109,12 @@ class FinanceSpider(Spider):
 					"title": response.css('h1#artibodyTitle::text').extract()[0],
 					"body": d.text(),
 					"date": response.css('span#pub_date::text').extract()[0],
+					"parsed": "1"
 				}
 				return data
 
-			except Exception, e:
-				print e
-
-			try:
-				d = pyq(response.css('body').extract()[0])
-				data = {
-					"url": response.url,
-					"title": d('div#artibodyTitle').text(),
-					"body": d('div#artibody').text(),
-					"date": d('div.from_info').text(),
-				}
-				return data
-
-			except Exception, e:
-				print e
+			except IndexError, e:
+				pass
 
 			try:
 				d = pyq(response.css('td[valign="top"]').extract()[2])
@@ -134,11 +123,42 @@ class FinanceSpider(Spider):
 					"title": response.css('font[size="5"]::text').extract()[0],
 					"body": d.text(),
 					"date": response.css('font[face="Arial"]').extract()[0],
+					"parsed": "2"
 				}
 				return data
 
-			except Exception, e:
-				print e
+			except IndexError, e:
+				pass
+
+			try:
+				d = pyq(response.css('td[valign="top"]').extract()[1])
+				data = {
+					"url": response.url,
+					"title": d('font[size="5"]').text(),
+					"body": d.text().replace('\r\n', ''),
+					"date": d('font[face="Arial"]').text(),
+					"parsed": "3"
+				}
+				data['body'] = data['body'].replace(data['date'], '').replace(data['title'], '')
+				data['date'] = data['date'].replace('http://dailynews.sina.com.cn ', '')
+				return data
+
+			except IndexError, e:
+				pass
+
+			try:
+				d = pyq(response.css('body').extract()[0])
+				data = {
+					"url": response.url,
+					"title": d('div#artibodyTitle').text(),
+					"body": d('div#artibody').text(),
+					"date": d('div.from_info').text(),
+					"parsed": "4"
+				}
+				return data
+
+			except IndexError, e:
+				pass
 
 			raise NotImplementedError('No matched analysys method')
 
