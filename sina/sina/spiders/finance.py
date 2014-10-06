@@ -26,6 +26,7 @@ class FinanceSpider(Spider):
 		self.collection = self.db.finance
 
 	def start_requests(self):
+
 		today = date(1999, 5, 26)
 		step = timedelta(1)
 
@@ -68,7 +69,13 @@ class FinanceSpider(Spider):
 		response = response.replace(body=response.body.decode('gb2312', 'ignore').encode('utf-8'), encoding='utf-8')
 		for row in response.css('li'):
 			if "财经" in row.css('::text').extract()[0].encode('utf-8'):
-				url = 'http://news.sina.com.cn' + row.css('a::attr(href)').extract()[0]
+				url = row.css('a::attr(href)').extract()[0]
+				if '..' in url:
+					url = 'http://news.sina.com.cn' + url[2::]
+				else:
+					if 'sina.com.cn' not in url:
+						url = 'http://news.sina.com.cn' + url
+
 				yield Request(url, callback=self.parsePost, priority=10)
 
 	def parseJson(self, response):
@@ -131,16 +138,28 @@ class FinanceSpider(Spider):
 				pass
 
 			try:
+				d = pyq(response.css('td[valign="top"]').extract()[2])
+				data = {
+					"url": response.url,
+					"title": d('h3').text(),
+					"body": d.text(),
+					"date": d('font[face="Arial"]').text(),
+					"parsed": "3"
+				}
+				return data
+
+			except IndexError, e:
+				pass
+
+			try:
 				d = pyq(response.css('td[valign="top"]').extract()[1])
 				data = {
 					"url": response.url,
 					"title": d('font[size="5"]').text(),
-					"body": d.text().replace('\r\n', ''),
+					"body": d.text(),
 					"date": d('font[face="Arial"]').text(),
-					"parsed": "3"
+					"parsed": "4"
 				}
-				data['body'] = data['body'].replace(data['date'], '').replace(data['title'], '')
-				data['date'] = data['date'].replace('http://dailynews.sina.com.cn ', '')
 				return data
 
 			except IndexError, e:
@@ -153,7 +172,7 @@ class FinanceSpider(Spider):
 					"title": d('div#artibodyTitle').text(),
 					"body": d('div#artibody').text(),
 					"date": d('div.from_info').text(),
-					"parsed": "4"
+					"parsed": "5"
 				}
 				return data
 
