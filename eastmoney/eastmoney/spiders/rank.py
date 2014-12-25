@@ -13,7 +13,7 @@ class RankSpider(Spider):
 		super(RankSpider, self).__init__(*args, **kwargs)
 		self.db = sqlite3.connect('data.db')
 		self.cursor = self.db.cursor()
-		self.cursor.execute('CREATE TABLE IF NOT EXISTS Stock (id VARCHAR(7) PRIMARY KEY, name TEXT, plate TEXT)')
+		self.cursor.execute('CREATE TABLE IF NOT EXISTS Stock (id VARCHAR(6) PRIMARY KEY, name TEXT, plate TEXT)')
 		self.db.commit()
 
 	def start_requests(self):
